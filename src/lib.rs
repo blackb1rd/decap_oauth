@@ -40,7 +40,8 @@ fn create_client(redirect_url: String) -> BasicClient {
     BasicClient::new(
         ClientId::new(client_id),
         Some(ClientSecret::new(secret)),
-        AuthUrl::new(format!("{}{}", hostname, OAUTH_AUTHORIZE_PATH)).expect("Auth URL should be a valid URL"),
+        AuthUrl::new(format!("{}{}", hostname, OAUTH_AUTHORIZE_PATH))
+            .expect("Auth URL should be a valid URL"),
         Some(
             TokenUrl::new(format!("{}{}", hostname, OAUTH_TOKEN_PATH))
                 .expect("Token URL should be a valid URL"),
