@@ -1,5 +1,5 @@
 use axum::Router;
-use decap_oauth::oauth_router;
+use decap_cms_oauth::router::oauth_router;
 use std::env;
 use std::process::exit;
 use tokio::net::TcpListener;
@@ -9,7 +9,7 @@ struct Args {
 }
 
 fn usage_exit(exit_code: i32) -> ! {
-    eprintln!("usage: decap_oauth [--port PORT] [--help]");
+    eprintln!("usage: decap-cms-oauth [--port PORT] [--help]");
     exit(exit_code);
 }
 
