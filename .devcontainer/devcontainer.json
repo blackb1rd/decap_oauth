@@ -1,0 +1,12 @@
+{
+	"name": "decap_cms_oauth",
+	"image": "rust:trixie",
+	"forwardPorts": [
+		3005
+	],
+	"containerEnv": {
+		"OAUTH_CLIENT_ID": "",
+		"OAUTH_SECRET": "",
+		"OAUTH_ORIGINS": "http://localhost:3005"
+	}
+}
