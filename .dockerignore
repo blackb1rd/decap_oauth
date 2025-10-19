@@ -1,0 +1,24 @@
+# Git files
+.git
+.gitignore
+
+# Build artifacts
+target/
+*.swp
+*.swo
+
+# Docker files
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Documentation
+README.md
+LICENSE
+
+# Environment files
+.env
+.env.example
+
+# Don't exclude vendor directory - we need it for offline builds
+# vendor/

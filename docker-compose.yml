@@ -1,0 +1,18 @@
+services:
+  decap-oauth:
+    build: .
+    image: decap-oauth:latest
+    container_name: decap-oauth
+    ports:
+      - "3005:3005"
+    environment:
+      - OAUTH_CLIENT_ID=${OAUTH_CLIENT_ID}
+      - OAUTH_SECRET=${OAUTH_SECRET}
+      - OAUTH_ORIGINS=${OAUTH_ORIGINS}
+      # Optional environment variables for non-GitHub providers
+      - OAUTH_PROVIDER=${OAUTH_PROVIDER:-github}
+      - OAUTH_HOSTNAME=${OAUTH_HOSTNAME:-https://github.com}
+      - OAUTH_TOKEN_PATH=${OAUTH_TOKEN_PATH:-/login/oauth/access_token}
+      - OAUTH_AUTHORIZE_PATH=${OAUTH_AUTHORIZE_PATH:-/login/oauth/authorize}
+      - OAUTH_SCOPES=${OAUTH_SCOPES:-repo}
+    restart: unless-stopped
