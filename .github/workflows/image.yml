@@ -44,5 +44,5 @@ jobs:
         push: ${{ github.event_name != 'pull_request' }}
         tags: |
           ${{ steps.meta.outputs.tags }}
-          ${{ github.ref_name == 'main' && 'latest' || '' }}
+          ghcr.io/${{ github.repository }}:latest
         labels: ${{ steps.meta.outputs.labels }}
