@@ -9,10 +9,7 @@
 //!
 //! When using GitHub Enterprise, please set `OAUTH_HOSTNAME` to the proper value.
 
-use oauth2::{
-    basic::BasicClient, AuthUrl, ClientId,
-    ClientSecret, RedirectUrl, TokenUrl,
-};
+use oauth2::{basic::BasicClient, AuthUrl, ClientId, ClientSecret, RedirectUrl, TokenUrl};
 use std::env;
 
 mod handlers;
@@ -46,12 +43,11 @@ fn create_client(redirect_url: String) -> BasicClient {
     .set_redirect_uri(RedirectUrl::new(redirect_url).expect("Invalid redirect URL"))
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::router::oauth_router;
-    use http_body_util::BodyExt;
     use axum::http::StatusCode;
+    use http_body_util::BodyExt;
     use std::env;
     use tower::util::ServiceExt;
 
@@ -76,7 +72,12 @@ mod tests {
 
         assert_eq!(response.status(), StatusCode::SEE_OTHER);
 
-        let location = response.headers().get("location").unwrap().to_str().unwrap();
+        let location = response
+            .headers()
+            .get("location")
+            .unwrap()
+            .to_str()
+            .unwrap();
         assert!(location.starts_with("https://github.com/login/oauth/authorize?"));
         assert!(location.contains("response_type=code"));
         assert!(location.contains("client_id=1234"));

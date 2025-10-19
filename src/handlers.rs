@@ -4,14 +4,11 @@ use axum::{
     response::{Html, IntoResponse, Redirect, Response},
 };
 use oauth2::{
-    reqwest::http_client, AccessToken, AuthorizationCode, CsrfToken, Scope,
-    TokenResponse,
+    reqwest::http_client, AccessToken, AuthorizationCode, CsrfToken, Scope, TokenResponse,
 };
 use std::collections::HashMap;
 
-use crate::{
-    create_client, get_var, OAUTH_PROVIDER, OAUTH_SCOPES,
-};
+use crate::{create_client, get_var, OAUTH_PROVIDER, OAUTH_SCOPES};
 
 /// The auth route.
 pub async fn auth(Query(params): Query<HashMap<String, String>>, headers: HeaderMap) -> Response {
