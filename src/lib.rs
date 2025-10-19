@@ -26,6 +26,7 @@ const OAUTH_HOSTNAME: &str = "https://github.com";
 const OAUTH_TOKEN_PATH: &str = "/login/oauth/access_token";
 const OAUTH_AUTHORIZE_PATH: &str = "/login/oauth/authorize";
 const OAUTH_SCOPES: &str = "repo";
+const OAUTH_PROVIDER: &str = "github";
 
 fn get_var(var: &str) -> String {
     env::var(var).expect(format!("{} environment variable should be defined", var).as_str())
@@ -34,7 +35,7 @@ fn get_var(var: &str) -> String {
 fn create_client(redirect_url: String) -> BasicClient {
     let client_id = get_var("OAUTH_CLIENT_ID");
     let secret = get_var("OAUTH_SECRET");
-    let hostname = env::var("OAUTH_HOSTNAME").unwrap_or(OAUTH_HOSTNAME.to_string());
+    let hostname = env::var("OAUTH_HOSTNAME").unwrap_or_else(|_| OAUTH_HOSTNAME.to_owned());
 
     BasicClient::new(
         ClientId::new(client_id),
@@ -93,7 +94,7 @@ fn login_response(status: &str, token: &AccessToken) -> Html<String> {
         }}
 
         window.opener.postMessage(
-          'authorization:github:{}:{{"token":"{}","provider":"github"}}',
+          'authorization:{}:{}:{{"token":"{}","provider":"{}"}}',
           e.origin
         );
 
@@ -101,12 +102,15 @@ fn login_response(status: &str, token: &AccessToken) -> Html<String> {
       }}
       window.addEventListener('message', receiveMessage, false);
 
-      window.opener.postMessage('authorizing:github', '*');
+      window.opener.postMessage('authorizing:{}', '*');
     </script>
     "#,
         origins,
+        OAUTH_PROVIDER,
         status,
         token.secret(),
+        OAUTH_PROVIDER,
+        OAUTH_PROVIDER,
     ))
 }
 
