@@ -22,6 +22,22 @@ When using GitHub Enterprise, please set `OAUTH_HOSTNAME` to the proper value.
 
 ## Docker Usage
 
+### Prerequisites
+
+Before building the Docker image, you need to vendor the Rust dependencies. You can do this manually or use the provided script:
+
+**Option 1: Using the preparation script (recommended)**
+```bash
+./prepare-docker.sh
+```
+
+**Option 2: Manual preparation**
+```bash
+cargo vendor
+```
+
+This creates a `vendor` directory with all dependencies, which is required for the Docker build.
+
 ### Using Docker Compose (Recommended)
 
 1. Copy `.env.example` to `.env`:
