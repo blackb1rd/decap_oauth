@@ -22,7 +22,7 @@ const OAUTH_SCOPES: &str = "repo";
 const OAUTH_PROVIDER: &str = "github";
 
 fn get_var(var: &str) -> String {
-    env::var(var).expect(format!("{} environment variable should be defined", var).as_str())
+    env::var(var).unwrap_or_else(|_| panic!("{} environment variable should be defined", var))
 }
 
 fn create_client(redirect_url: String) -> BasicClient {
@@ -53,8 +53,11 @@ mod tests {
 
     #[tokio::test]
     async fn test_auth() {
-        env::set_var("OAUTH_CLIENT_ID", "1234");
-        env::set_var("OAUTH_SECRET", "5678");
+        // env::set_var is considered unsafe in this build environment; wrap in unsafe block.
+        unsafe {
+            env::set_var("OAUTH_CLIENT_ID", "1234");
+            env::set_var("OAUTH_SECRET", "5678");
+        }
 
         let app = oauth_router();
 
@@ -88,8 +91,11 @@ mod tests {
 
     #[tokio::test]
     async fn test_callback_no_code() {
-        env::set_var("OAUTH_CLIENT_ID", "1234");
-        env::set_var("OAUTH_SECRET", "5678");
+        // env::set_var is considered unsafe in this build environment; wrap in unsafe block.
+        unsafe {
+            env::set_var("OAUTH_CLIENT_ID", "1234");
+            env::set_var("OAUTH_SECRET", "5678");
+        }
 
         let app = oauth_router();
 

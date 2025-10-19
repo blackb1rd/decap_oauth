@@ -31,7 +31,7 @@ pub async fn auth(Query(params): Query<HashMap<String, String>>, headers: Header
         .add_scope(Scope::new(scope))
         .url();
 
-    Redirect::to(&auth_url.to_string()).into_response()
+    Redirect::to(auth_url.as_ref()).into_response()
 }
 
 fn login_response(status: &str, token: &AccessToken) -> Html<String> {
