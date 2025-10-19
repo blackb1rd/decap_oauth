@@ -9,7 +9,7 @@
 //!
 //! When using GitHub Enterprise, please set `OAUTH_HOSTNAME` to the proper value.
 
-use oauth2::{basic::BasicClient, AuthUrl, ClientId, ClientSecret, RedirectUrl, TokenUrl};
+use oauth2::{AuthUrl, ClientId, ClientSecret, RedirectUrl, TokenUrl, basic::BasicClient};
 use std::env;
 
 mod handlers;

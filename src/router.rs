@@ -1,4 +1,4 @@
-use axum::{routing, Router};
+use axum::{Router, routing};
 
 use crate::handlers::{auth, callback};
 
