@@ -9,18 +9,11 @@
 //!
 //! When using GitHub Enterprise, please set `OAUTH_HOSTNAME` to the proper value.
 
-use axum::{
-    extract::Query,
-    http::{HeaderMap, StatusCode},
-    response::{Html, IntoResponse, Redirect, Response},
-    routing, Router,
-};
-use oauth2::{
-    basic::BasicClient, reqwest::http_client, AccessToken, AuthUrl, AuthorizationCode, ClientId,
-    ClientSecret, CsrfToken, RedirectUrl, Scope, TokenResponse, TokenUrl,
-};
-use std::collections::HashMap;
+use oauth2::{AuthUrl, ClientId, ClientSecret, RedirectUrl, TokenUrl, basic::BasicClient};
 use std::env;
+
+mod handlers;
+pub mod router;
 
 const OAUTH_HOSTNAME: &str = "https://github.com";
 const OAUTH_TOKEN_PATH: &str = "/login/oauth/access_token";
@@ -29,7 +22,7 @@ const OAUTH_SCOPES: &str = "repo";
 const OAUTH_PROVIDER: &str = "github";
 
 fn get_var(var: &str) -> String {
-    env::var(var).expect(format!("{} environment variable should be defined", var).as_str())
+    env::var(var).unwrap_or_else(|_| panic!("{} environment variable should be defined", var))
 }
 
 fn create_client(redirect_url: String) -> BasicClient {
@@ -50,106 +43,77 @@ fn create_client(redirect_url: String) -> BasicClient {
     .set_redirect_uri(RedirectUrl::new(redirect_url).expect("Invalid redirect URL"))
 }
 
-/// The auth route.
-pub async fn auth(Query(params): Query<HashMap<String, String>>, headers: HeaderMap) -> Response {
-    let scope = match params.get("scope") {
-        Some(scope) => scope.to_owned(),
-        None => OAUTH_SCOPES.to_string(),
-    };
+#[cfg(test)]
+mod tests {
+    use super::router::oauth_router;
+    use axum::http::StatusCode;
+    use http_body_util::BodyExt;
+    use std::env;
+    use tower::util::ServiceExt;
 
-    let host = match headers.get("host") {
-        Some(host) => host.to_str().unwrap(),
-        None => return (StatusCode::BAD_REQUEST, "No host header".to_string()).into_response(),
-    };
-
-    let redirect_url = format!("https://{}/callback", host);
-
-    let client = create_client(redirect_url);
-
-    let (auth_url, _csrf_state) = client
-        .authorize_url(CsrfToken::new_random)
-        .add_scope(Scope::new(scope))
-        .url();
-
-    Redirect::to(&auth_url.to_string()).into_response()
-}
-
-fn login_response(status: &str, token: &AccessToken) -> Html<String> {
-    let origins = get_var("OAUTH_ORIGINS");
-
-    Html(format!(
-        r#"
-    <script>
-      const receiveMessage = (e) => {{
-        let matches = false;
-
-        for(const origin of '{}'.split(',')) {{
-          if (e.origin.match(origin)) {{
-              matches = true;
-              break;
-          }}
-        }}
-
-        if (!matches) {{
-          return;
-        }}
-
-        window.opener.postMessage(
-          'authorization:{}:{}:{{"token":"{}","provider":"{}"}}',
-          e.origin
-        );
-
-        window.removeEventListener('message', receiveMessage, false);
-      }}
-      window.addEventListener('message', receiveMessage, false);
-
-      window.opener.postMessage('authorizing:{}', '*');
-    </script>
-    "#,
-        origins,
-        OAUTH_PROVIDER,
-        status,
-        token.secret(),
-        OAUTH_PROVIDER,
-        OAUTH_PROVIDER,
-    ))
-}
-
-/// The callback route.
-pub async fn callback(
-    Query(params): Query<HashMap<String, String>>,
-    headers: HeaderMap,
-) -> Response {
-    let code = match params.get("code") {
-        Some(code) => AuthorizationCode::new(code.to_string()),
-        None => return (StatusCode::BAD_REQUEST, "Code is required".to_string()).into_response(),
-    };
-
-    let host = match headers.get("host") {
-        Some(host) => host.to_str().unwrap(),
-        None => return (StatusCode::BAD_REQUEST, "No host header".to_string()).into_response(),
-    };
-
-    let redirect_url = format!("https://{}/callback", host);
-
-    let client = create_client(redirect_url);
-
-    match client.exchange_code(code).request(http_client) {
-        Ok(token) => (
-            StatusCode::OK,
-            login_response("success", token.access_token()),
-        )
-            .into_response(),
-        Err(e) => {
-            eprintln!("{:?}", e);
-            (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response()
+    #[tokio::test]
+    async fn test_auth() {
+        // env::set_var is considered unsafe in this build environment; wrap in unsafe block.
+        unsafe {
+            env::set_var("OAUTH_CLIENT_ID", "1234");
+            env::set_var("OAUTH_SECRET", "5678");
         }
-    }
-}
 
-/// Return a full Axum router with both routes used by OAuth.
-pub fn oauth_router() -> Router {
-    Router::new()
-        .route("/auth", routing::get(auth))
-        .route("/callback", routing::get(callback))
+        let app = oauth_router();
+
+        let response = app
+            .oneshot(
+                axum::http::Request::builder()
+                    .method("GET")
+                    .uri("/auth")
+                    .header("Host", "test.com")
+                    .body(axum::body::Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::SEE_OTHER);
+
+        let location = response
+            .headers()
+            .get("location")
+            .unwrap()
+            .to_str()
+            .unwrap();
+        assert!(location.starts_with("https://github.com/login/oauth/authorize?"));
+        assert!(location.contains("response_type=code"));
+        assert!(location.contains("client_id=1234"));
+        assert!(location.contains("redirect_uri=https%3A%2F%2Ftest.com%2Fcallback"));
+        assert!(location.contains("scope=repo"));
+        assert!(location.contains("state="));
+    }
+
+    #[tokio::test]
+    async fn test_callback_no_code() {
+        // env::set_var is considered unsafe in this build environment; wrap in unsafe block.
+        unsafe {
+            env::set_var("OAUTH_CLIENT_ID", "1234");
+            env::set_var("OAUTH_SECRET", "5678");
+        }
+
+        let app = oauth_router();
+
+        let response = app
+            .oneshot(
+                axum::http::Request::builder()
+                    .method("GET")
+                    .uri("/callback")
+                    .header("Host", "test.com")
+                    .body(axum::body::Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+
+        let body = response.into_body().collect().await.unwrap().to_bytes();
+        assert_eq!(&body[..], b"Code is required");
+    }
 }
