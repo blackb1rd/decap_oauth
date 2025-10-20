@@ -11,6 +11,7 @@ jobs:
   deploy:
     name: Deploy
     runs-on: ubuntu-latest
+    environment: deployment
     steps:
       - name: Deploy to Server
         run: |
