@@ -17,13 +17,13 @@ jobs:
           # Setup SSH
           SSH_KEY_PATH="$HOME/.ssh/id_ed25519"
           mkdir -p "$HOME/.ssh"
-          echo -e "${{ secrets.SSH_PRIVATE_KEY }}" > "$SSH_KEY_PATH"
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > "$SSH_KEY_PATH"
           chmod 600 "$SSH_KEY_PATH"
 
           # Safely escape secrets for the remote shell
-          OAUTH_CLIENT_ID_ESCAPED=$(printf '%q' "$OAUTH_CLIENT_ID")
-          OAUTH_SECRET_ESCAPED=$(printf '%q' "$OAUTH_SECRET")
-          OAUTH_ORIGINS_ESCAPED=$(printf '%q' "$OAUTH_ORIGINS")
+          OAUTH_CLIENT_ID_ESCAPED=$(printf '%q' "${{ secrets.OAUTH_CLIENT_ID }}")
+          OAUTH_SECRET_ESCAPED=$(printf '%q' "${{ secrets.OAUTH_SECRET }}")
+          OAUTH_ORIGINS_ESCAPED=$(printf '%q' "${{ secrets.OAUTH_ORIGINS }}")
 
           # Pull the latest image and restart the service on the server
           ssh -i $SSH_KEY_PATH -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ${{ secrets.SSH_USER_HOST }} " \
@@ -38,10 +38,4 @@ jobs:
               -e OAUTH_SECRET=$OAUTH_SECRET_ESCAPED \
               -e OAUTH_ORIGINS=$OAUTH_ORIGINS_ESCAPED \
               ghcr.io/blackb1rd/decap-cms-oauth:latest"
-        env:
-          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-          SSH_USER_HOST: ${{ secrets.SSH_USER_HOST }}
-          OAUTH_CLIENT_ID: ${{ secrets.OAUTH_CLIENT_ID }}
-          OAUTH_SECRET: ${{ secrets.OAUTH_SECRET }}
-          OAUTH_ORIGINS: ${{ secrets.OAUTH_ORIGINS }}
         shell: bash
