@@ -49,6 +49,7 @@ docker run \
   -e OAUTH_SECRET=<your_secret> \
   -e OAUTH_ORIGINS=<your_origins> \
   -p 8080:3005 \
+  -v /etc/ssl/certs:/etc/ssl/certs:ro \
   decap-cms-oauth
 ```
 
@@ -70,6 +71,7 @@ docker run \
   -e OAUTH_SECRET=<your_secret> \
   -e OAUTH_ORIGINS=<your_origins> \
   -p 8080:3005 \
+  -v /etc/ssl/certs:/etc/ssl/certs:ro \
   ghcr.io/blackb1rd/decap-cms-oauth:latest
 ```
 

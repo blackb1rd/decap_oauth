@@ -40,6 +40,7 @@ jobs:
               --name decap-cms-oauth-app \
               --restart always \
               -p 3005:3005 \
+              -v /etc/ssl/certs:/etc/ssl/certs:ro \
               -e OAUTH_CLIENT_ID=$OAUTH_CLIENT_ID_ESCAPED \
               -e OAUTH_SECRET=$OAUTH_SECRET_ESCAPED \
               -e OAUTH_ORIGINS=$OAUTH_ORIGINS_ESCAPED \
