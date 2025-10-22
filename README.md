@@ -13,6 +13,26 @@ When using GitHub Enterprise, please set `OAUTH_HOSTNAME` to the proper value.
 
 Documentation available on [docs.rs](https://docs.rs/decap-cms-oauth/latest/decap_cms_oauth/).
 
+## GitHub OAuth Application Setup
+
+To use this provider, you need to create a new OAuth application on GitHub. Follow these steps:
+
+1.  **Go to GitHub Developer Settings:**
+    *   Log in to your GitHub account.
+    *   Click on your profile picture in the top-right corner and select **Settings**.
+    *   In the left sidebar, click on **Developer settings**.
+    *   Click on **OAuth Apps**, then click the **New OAuth App** button.
+
+2.  **Fill in the Application Details:**
+    *   **Application name:** A descriptive name for your application (e.g., "Decap CMS Auth").
+    *   **Homepage URL:** The URL of your website or Decap CMS instance.
+    *   **Authorization callback URL:** This is the URL where users will be redirected after they authorize the application. It should be in the format `https://<your-oauth-provider-domain>/callback`. For example, if you are running this service at `https://oauth.example.com`, the callback URL will be `https://oauth.example.com/callback`.
+
+3.  **Generate Client ID and Secret:**
+    *   After creating the application, you will be redirected to its page.
+    *   You will see your **Client ID**. Copy this value and set it as the `OAUTH_CLIENT_ID` environment variable.
+    *   Click the **Generate a new client secret** button. Copy the generated secret and set it as the `OAUTH_SECRET` environment variable. **Note:** This secret is only displayed once, so make sure to save it securely.
+
 ## Running with Docker
 
 To run the application using Docker, first build the image:
