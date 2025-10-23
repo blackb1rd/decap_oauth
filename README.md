@@ -13,6 +13,26 @@ When using GitHub Enterprise, please set `OAUTH_HOSTNAME` to the proper value.
 
 Documentation available on [docs.rs](https://docs.rs/decap-cms-oauth/latest/decap_cms_oauth/).
 
+## GitHub OAuth Application Setup
+
+To use this provider, you need to create a new OAuth application on GitHub. Follow these steps:
+
+1.  **Go to GitHub Developer Settings:**
+    *   Log in to your GitHub account.
+    *   Click on your profile picture in the top-right corner and select **Settings**.
+    *   In the left sidebar, click on **Developer settings**.
+    *   Click on **OAuth Apps**, then click the **New OAuth App** button.
+
+2.  **Fill in the Application Details:**
+    *   **Application name:** A descriptive name for your application (e.g., "Decap CMS Auth").
+    *   **Homepage URL:** The URL of your website or Decap CMS instance.
+    *   **Authorization callback URL:** This is the URL where users will be redirected after they authorize the application. It should be in the format `https://<your-oauth-provider-domain>/callback`. For example, if you are running this service at `https://oauth.example.com`, the callback URL will be `https://oauth.example.com/callback`.
+
+3.  **Generate Client ID and Secret:**
+    *   After creating the application, you will be redirected to its page.
+    *   You will see your **Client ID**. Copy this value and set it as the `OAUTH_CLIENT_ID` environment variable.
+    *   Click the **Generate a new client secret** button. Copy the generated secret and set it as the `OAUTH_SECRET` environment variable. **Note:** This secret is only displayed once, so make sure to save it securely.
+
 ## Running with Docker
 
 To run the application using Docker, first build the image:
@@ -29,6 +49,7 @@ docker run \
   -e OAUTH_SECRET=<your_secret> \
   -e OAUTH_ORIGINS=<your_origins> \
   -p 8080:3005 \
+  -v /etc/ssl/certs:/etc/ssl/certs:ro \
   decap-cms-oauth
 ```
 
@@ -50,25 +71,53 @@ docker run \
   -e OAUTH_SECRET=<your_secret> \
   -e OAUTH_ORIGINS=<your_origins> \
   -p 8080:3005 \
+  -v /etc/ssl/certs:/etc/ssl/certs:ro \
   ghcr.io/blackb1rd/decap-cms-oauth:latest
 ```
 
-## Deployment
+## Using a Reverse Proxy (Nginx)
 
-This repository includes a GitHub Actions workflow to automatically deploy the application to a server using Docker. The deployment is triggered on every push to the `main` branch.
+In a production environment, it is recommended to run the application behind a reverse proxy like Nginx. This allows you to handle SSL termination, caching, and other advanced features.
 
-### Server Setup
+Here is a sample Nginx configuration for proxying requests to the application:
 
-Ensure that Docker is installed on your server.
+```nginx
+server {
+    listen 80;
+    server_name your_domain.com;
 
-### Repository Configuration
+    # Redirect HTTP to HTTPS
+    return 301 https://$host$request_uri;
+}
 
-To enable the deployment workflow, you must configure the following secrets in your GitHub repository's settings (`Settings > Secrets and variables > Actions`):
+server {
+    listen 443 ssl http2;
+    server_name your_domain.com;
 
--   `SSH_PRIVATE_KEY`: The private SSH key used to connect to your server.
--   `SSH_USER_HOST`: The username and host of your server (e.g., `user@your-server.com`).
--   `OAUTH_CLIENT_ID`: The OAuth client ID for your application.
--   `OAUTH_SECRET`: The OAuth secret for your application.
--   `OAUTH_ORIGINS`: A comma-separated list of allowed origins.
+    # SSL certificate configuration
+    ssl_certificate /path/to/your/fullchain.pem;
+    ssl_certificate_key /path/to/your/privkey.pem;
 
-The workflow will connect to your server via SSH, pull the latest Docker image, and then stop, remove, and restart the container. The `OAUTH_*` secrets are safely escaped and passed directly to the `docker run` command, ensuring that special characters are handled correctly.
+    location / {
+        proxy_pass http://localhost:3005;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+```
+
+This configuration listens for both HTTP and HTTPS traffic. HTTP traffic is redirected to HTTPS. The `proxy_pass` directive forwards requests to the application running on `localhost:3005`.
+
+## Decap CMS Configuration
+
+To use this provider with Decap CMS, you need to configure the `backend` in your `config.yml` file. Set `base_url` to the URL of your deployed provider and `auth_endpoint` to `auth`.
+
+```yaml
+backend:
+  name: github
+  repo: your-org/your-repo
+  base_url: https://your-oauth-provider.com
+  auth_endpoint: auth
+```

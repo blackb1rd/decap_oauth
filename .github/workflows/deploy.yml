@@ -1,8 +1,12 @@
 name: Deploy
 
 on:
-  push:
-    branches: [ main ]
+  workflow_run:
+    workflows: ["Build and Push Docker Image"]
+    types:
+      - completed
+    branches:
+      - main
 
 permissions:
   contents: read
@@ -11,19 +15,21 @@ jobs:
   deploy:
     name: Deploy
     runs-on: ubuntu-latest
+    if: github.event.workflow_run.conclusion == 'success'
+    environment: deployment
     steps:
       - name: Deploy to Server
         run: |
           # Setup SSH
           SSH_KEY_PATH="$HOME/.ssh/id_ed25519"
           mkdir -p "$HOME/.ssh"
-          echo -e "${{ secrets.SSH_PRIVATE_KEY }}" > "$SSH_KEY_PATH"
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > "$SSH_KEY_PATH"
           chmod 600 "$SSH_KEY_PATH"
 
           # Safely escape secrets for the remote shell
-          OAUTH_CLIENT_ID_ESCAPED=$(printf '%q' "$OAUTH_CLIENT_ID")
-          OAUTH_SECRET_ESCAPED=$(printf '%q' "$OAUTH_SECRET")
-          OAUTH_ORIGINS_ESCAPED=$(printf '%q' "$OAUTH_ORIGINS")
+          OAUTH_CLIENT_ID_ESCAPED=$(printf '%q' "${{ secrets.OAUTH_CLIENT_ID }}")
+          OAUTH_SECRET_ESCAPED=$(printf '%q' "${{ secrets.OAUTH_SECRET }}")
+          OAUTH_ORIGINS_ESCAPED=$(printf '%q' "${{ secrets.OAUTH_ORIGINS }}")
 
           # Pull the latest image and restart the service on the server
           ssh -i $SSH_KEY_PATH -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ${{ secrets.SSH_USER_HOST }} " \
@@ -34,14 +40,9 @@ jobs:
               --name decap-cms-oauth-app \
               --restart always \
               -p 3005:3005 \
+              -v /etc/ssl/certs:/etc/ssl/certs:ro \
               -e OAUTH_CLIENT_ID=$OAUTH_CLIENT_ID_ESCAPED \
               -e OAUTH_SECRET=$OAUTH_SECRET_ESCAPED \
               -e OAUTH_ORIGINS=$OAUTH_ORIGINS_ESCAPED \
               ghcr.io/blackb1rd/decap-cms-oauth:latest"
-        env:
-          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-          SSH_USER_HOST: ${{ secrets.SSH_USER_HOST }}
-          OAUTH_CLIENT_ID: ${{ secrets.OAUTH_CLIENT_ID }}
-          OAUTH_SECRET: ${{ secrets.OAUTH_SECRET }}
-          OAUTH_ORIGINS: ${{ secrets.OAUTH_ORIGINS }}
         shell: bash

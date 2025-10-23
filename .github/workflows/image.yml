@@ -17,7 +17,7 @@ jobs:
 
     steps:
     - name: Check out the repo
-      uses: actions/checkout@v3
+      uses: actions/checkout@v5
 
     - name: Log in to GitHub Container Registry
       if: github.event_name != 'pull_request'
@@ -38,7 +38,7 @@ jobs:
           type=sha
 
     - name: Build and push Docker image
-      uses: docker/build-push-action@v5
+      uses: docker/build-push-action@v6
       with:
         context: .
         push: ${{ github.event_name != 'pull_request' }}
