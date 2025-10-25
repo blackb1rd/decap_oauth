@@ -1,14 +1,12 @@
 use axum::{
-    extract::Query,
+    extract::{Query, State},
     http::{HeaderMap, StatusCode},
     response::{Html, IntoResponse, Redirect, Response},
 };
-use oauth2::{
-    AccessToken, AuthorizationCode, CsrfToken, Scope, TokenResponse, reqwest::http_client,
-};
+use oauth2::{AccessToken, AuthorizationCode, CsrfToken, Scope, TokenResponse};
 use std::collections::HashMap;
 
-use crate::{OAUTH_PROVIDER, OAUTH_SCOPES, create_client, get_var};
+use crate::{AppState, OAUTH_PROVIDER, OAUTH_SCOPES, create_client, get_var};
 
 /// The auth route.
 pub async fn auth(Query(params): Query<HashMap<String, String>>, headers: HeaderMap) -> Response {
@@ -79,6 +77,7 @@ fn login_response(status: &str, token: &AccessToken) -> Html<String> {
 pub async fn callback(
     Query(params): Query<HashMap<String, String>>,
     headers: HeaderMap,
+    State(state): State<AppState>,
 ) -> Response {
     let code = match params.get("code") {
         Some(code) => AuthorizationCode::new(code.to_string()),
@@ -94,7 +93,11 @@ pub async fn callback(
 
     let client = create_client(redirect_url);
 
-    match client.exchange_code(code).request(http_client) {
+    match client
+        .exchange_code(code)
+        .request_async(|req| (state.http_client)(req))
+        .await
+    {
         Ok(token) => (
             StatusCode::OK,
             login_response("success", token.access_token()),

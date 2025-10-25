@@ -1,5 +1,7 @@
 use axum::Router;
+use decap_cms_oauth::AppState;
 use decap_cms_oauth::router::oauth_router;
+use oauth2::reqwest::async_http_client;
 use std::env;
 use std::process::exit;
 use tokio::net::TcpListener;
@@ -50,7 +52,8 @@ async fn main() {
     check_var("OAUTH_SECRET");
     check_var("OAUTH_ORIGINS");
 
-    let app = Router::new().merge(oauth_router());
+    let state = AppState::new(|req| Box::pin(async_http_client(req)));
+    let app = Router::new().merge(oauth_router(state));
 
     let args = parse_args();
 
