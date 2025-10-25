@@ -1,6 +1,6 @@
 use axum::Router;
-use decap_cms_oauth::router::oauth_router;
 use decap_cms_oauth::AppState;
+use decap_cms_oauth::router::oauth_router;
 use oauth2::reqwest::async_http_client;
 use std::env;
 use std::process::exit;

@@ -1,7 +1,7 @@
 use axum::{Router, routing};
 
-use crate::handlers::{auth, callback};
 use crate::AppState;
+use crate::handlers::{auth, callback};
 
 /// Return a full Axum router with both routes used by OAuth.
 pub fn oauth_router(state: AppState) -> Router {

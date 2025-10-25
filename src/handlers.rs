@@ -3,9 +3,7 @@ use axum::{
     http::{HeaderMap, StatusCode},
     response::{Html, IntoResponse, Redirect, Response},
 };
-use oauth2::{
-    AccessToken, AuthorizationCode, CsrfToken, Scope, TokenResponse,
-};
+use oauth2::{AccessToken, AuthorizationCode, CsrfToken, Scope, TokenResponse};
 use std::collections::HashMap;
 
 use crate::{AppState, OAUTH_PROVIDER, OAUTH_SCOPES, create_client, get_var};
@@ -95,7 +93,11 @@ pub async fn callback(
 
     let client = create_client(redirect_url);
 
-    match client.exchange_code(code).request_async(|req| (state.http_client)(req)).await {
+    match client
+        .exchange_code(code)
+        .request_async(|req| (state.http_client)(req))
+        .await
+    {
         Ok(token) => (
             StatusCode::OK,
             login_response("success", token.access_token()),

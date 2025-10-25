@@ -9,7 +9,10 @@
 //!
 //! When using GitHub Enterprise, please set `OAUTH_HOSTNAME` to the proper value.
 
-use oauth2::{AuthUrl, ClientId, ClientSecret, RedirectUrl, TokenUrl, basic::BasicClient, HttpRequest, HttpResponse};
+use oauth2::{
+    AuthUrl, ClientId, ClientSecret, HttpRequest, HttpResponse, RedirectUrl, TokenUrl,
+    basic::BasicClient,
+};
 use std::env;
 use std::future::Future;
 use std::pin::Pin;
@@ -18,8 +21,14 @@ mod handlers;
 pub mod router;
 
 type HttpClient = Box<
-    dyn Fn(HttpRequest) -> Pin<Box<dyn Future<Output = Result<HttpResponse, oauth2::reqwest::Error<reqwest::Error>>> + Send>>
-        + Send
+    dyn Fn(
+            HttpRequest,
+        ) -> Pin<
+            Box<
+                dyn Future<Output = Result<HttpResponse, oauth2::reqwest::Error<reqwest::Error>>>
+                    + Send,
+            >,
+        > + Send
         + Sync,
 >;
 
@@ -31,8 +40,15 @@ pub struct AppState {
 impl AppState {
     pub fn new<F>(http_client: F) -> Self
     where
-        F: Fn(HttpRequest) -> Pin<Box<dyn Future<Output = Result<HttpResponse, oauth2::reqwest::Error<reqwest::Error>>> + Send>>
-            + Send
+        F: Fn(
+                HttpRequest,
+            ) -> Pin<
+                Box<
+                    dyn Future<
+                            Output = Result<HttpResponse, oauth2::reqwest::Error<reqwest::Error>>,
+                        > + Send,
+                >,
+            > + Send
             + Sync
             + 'static,
     {
@@ -82,7 +98,15 @@ mod tests {
     use std::pin::Pin;
     use tower::util::ServiceExt;
 
-    fn mock_http_client(_req: HttpRequest) -> Pin<Box<dyn future::Future<Output = Result<HttpResponse, oauth2::reqwest::Error<reqwest::Error>>> + Send>> {
+    fn mock_http_client(
+        _req: HttpRequest,
+    ) -> Pin<
+        Box<
+            dyn future::Future<
+                    Output = Result<HttpResponse, oauth2::reqwest::Error<reqwest::Error>>,
+                > + Send,
+        >,
+    > {
         let content = serde_json::to_string(&serde_json::json!({
             "access_token": "test_token",
             "token_type": "bearer"
@@ -96,8 +120,18 @@ mod tests {
         Box::pin(future::ready(Ok(response)))
     }
 
-    fn mock_http_client_error(_req: HttpRequest) -> Pin<Box<dyn future::Future<Output = Result<HttpResponse, oauth2::reqwest::Error<reqwest::Error>>> + Send>> {
-        Box::pin(future::ready(Err(oauth2::reqwest::Error::Reqwest(reqwest::Client::new().get("").build().err().unwrap()))))
+    fn mock_http_client_error(
+        _req: HttpRequest,
+    ) -> Pin<
+        Box<
+            dyn future::Future<
+                    Output = Result<HttpResponse, oauth2::reqwest::Error<reqwest::Error>>,
+                > + Send,
+        >,
+    > {
+        Box::pin(future::ready(Err(oauth2::reqwest::Error::Reqwest(
+            reqwest::Client::new().get("").build().err().unwrap(),
+        ))))
     }
 
     #[tokio::test]
@@ -235,7 +269,9 @@ mod tests {
 
         let body = response.into_body().collect().await.unwrap().to_bytes();
         let body_str = String::from_utf8(body.to_vec()).unwrap();
-        assert!(body_str.contains("authorization:github:success:{\"token\":\"test_token\",\"provider\":\"github\"}"));
+        assert!(body_str.contains(
+            "authorization:github:success:{\"token\":\"test_token\",\"provider\":\"github\"}"
+        ));
     }
 
     #[tokio::test]
